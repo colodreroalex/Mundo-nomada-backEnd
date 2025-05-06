@@ -1,8 +1,13 @@
 
 <?php
 function retornarConexion() {
+    //Host servidor
+    // $host = "192.168.1.59:3306";
+    // $user = "cualquiera";
+    
     $host = "localhost:3306";
     $user = "root";
+    
     $pass = "";
     $dbname = "mundonomada3";
 

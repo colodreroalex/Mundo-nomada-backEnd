@@ -50,6 +50,13 @@ if (!isset($params->id) || !isset($params->nombre) || !isset($params->precio) ||
     exit;
 }
 
+// Validar que el precio sea mayor a 0
+if (floatval($params->precio) <= 0) {
+    http_response_code(400);
+    echo json_encode(['resultado' => 'ERROR', 'mensaje' => 'El precio debe ser mayor a 0.']);
+    exit;
+}
+
 // Incluye la conexión
 require("../conexion.php");
 $con = retornarConexion();

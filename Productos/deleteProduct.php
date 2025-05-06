@@ -59,7 +59,7 @@ $con->begin_transaction();
 
 try {
   // Primero verificamos si el producto existe
-  $checkStmt = $con->prepare("SELECT COUNT(*) as count FROM Productos WHERE id = ?");
+  $checkStmt = $con->prepare("SELECT COUNT(*) as count FROM Productos WHERE ProductoID = ?");
   $checkStmt->bind_param("i", $id);
   $checkStmt->execute();
   $result = $checkStmt->get_result();
@@ -71,7 +71,7 @@ try {
   }
 
   // Eliminamos el producto
-  $stmt = $con->prepare("DELETE FROM Productos WHERE id = ?");
+  $stmt = $con->prepare("DELETE FROM Productos WHERE ProductoID = ?");
   $stmt->bind_param("i", $id);
   
   if (!$stmt->execute()) {
