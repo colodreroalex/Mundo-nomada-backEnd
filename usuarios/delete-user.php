@@ -83,10 +83,50 @@ try {
     // Iniciar transacción para asegurar la integridad de los datos
     $conexion->begin_transaction();
     
-    // Opcionalmente, si hay tablas relacionadas con usuarios (como pedidos, etc.)
-    // deberías actualizar esas tablas primero o implementar una política de eliminación
+    // 1. Primero verificar si el usuario tiene pedidos y eliminar order_items asociados
+    $checkOrdersStmt = $conexion->prepare("SELECT id FROM orders WHERE user_id = ?");
+    $checkOrdersStmt->bind_param("i", $userId);
+    $checkOrdersStmt->execute();
+    $ordersResult = $checkOrdersStmt->get_result();
     
-    // Eliminar el usuario
+    // Recopilar todos los IDs de pedidos para eliminar sus items
+    $orderIds = [];
+    while ($order = $ordersResult->fetch_assoc()) {
+        $orderIds[] = $order['id'];
+    }
+    
+    // Si el usuario tiene pedidos, eliminar primero los items asociados 
+    // (aunque estos tienen ON DELETE CASCADE, lo hacemos explícitamente para mayor seguridad)
+    if (!empty($orderIds)) {
+        foreach ($orderIds as $orderId) {
+            $deleteOrderItemsStmt = $conexion->prepare("DELETE FROM order_items WHERE order_id = ?");
+            $deleteOrderItemsStmt->bind_param("i", $orderId);
+            $deleteOrderItemsStmt->execute();
+            
+            // Registrar la operación
+            error_log("Eliminados {$deleteOrderItemsStmt->affected_rows} items del pedido $orderId");
+        }
+    }
+    
+    // 2. Ahora eliminar todos los pedidos del usuario
+    $deleteOrdersStmt = $conexion->prepare("DELETE FROM orders WHERE user_id = ?");
+    $deleteOrdersStmt->bind_param("i", $userId);
+    $deleteOrdersStmt->execute();
+    $ordersDeleted = $deleteOrdersStmt->affected_rows;
+    
+    // Registrar la operación
+    error_log("Eliminados $ordersDeleted pedidos del usuario $userId");
+    
+    // 3. Eliminar registros del carrito de compras
+    $deleteCartStmt = $conexion->prepare("DELETE FROM carrito WHERE user_id = ?");
+    $deleteCartStmt->bind_param("i", $userId);
+    $deleteCartStmt->execute();
+    $cartItemsDeleted = $deleteCartStmt->affected_rows;
+    
+    // Registrar la operación
+    error_log("Eliminados $cartItemsDeleted items del carrito del usuario $userId");
+    
+    // Ahora eliminar el usuario
     $stmt = $conexion->prepare("DELETE FROM users WHERE id = ?");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
